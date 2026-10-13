@@ -1,13 +1,42 @@
 # Remember me — agenda e organização pessoal
 
-Aplicação em português do Brasil, com servidor Node.js 24, banco SQLite persistente, autenticação por conta e interface responsiva. Não usa dados fictícios nem armazenamento local do navegador como banco; `localStorage` guarda apenas o tema.
+> **Este projeto foi inteiramente feito com o uso de Inteligência Artificial (IA), incluindo o código, a interface, os testes e a documentação, a partir de instruções e decisões humanas.**
 
-## Situação da entrega
+## Sobre o projeto
 
-- Implementação executável localmente: calendário mensal/semanal/diário, compromissos, prazos, categorias, notas, quadros, leitura e saúde.
-- Lembretes executados no servidor, com fila persistente, tentativas, trava de processamento e chave de idempotência. **E-mails reais não foram enviados nesta entrega: configure Resend e confirme o destinatário.**
-- CI, build Docker, publicação por SSH, monitoramento e rollback estão definidos no repositório. **Não foram executados no GitHub ou em uma hospedagem real**, pois esta sessão não tem repositório remoto, destino de publicação nem credenciais desses serviços.
-- A conexão nativa do Sites não estava disponível; este projeto é independente e pode ser hospedado em servidor com Docker. Desenvolvimento local não proporciona acesso remoto por si só.
+A Remember me é uma aplicação web de agenda e organização pessoal em português do Brasil. Ela reúne compromissos, notas, tarefas, livros e registros de saúde em uma interface com temas claro e escuro, adaptada a diferentes tamanhos de tela.
+
+O objetivo é permitir que a pessoa consulte sua rotina e registre suas atividades no mesmo lugar: uma tarefa com prazo aparece no calendário, uma nota pode ser vinculada a uma data e os registros de leitura atualizam o progresso de um livro.
+
+Os dados são persistidos em SQLite no servidor e vinculados à conta de cada usuário. O navegador guarda apenas a preferência de tema em `localStorage`. O uso de IA descrito neste README se refere ao desenvolvimento do projeto; a aplicação não oferece um assistente de IA nem exige uma chave de modelo para funcionar.
+
+## Tecnologias e arquitetura
+
+| Camada       | Implementação                                                                  |
+| ------------ | ------------------------------------------------------------------------------ |
+| Interface    | HTML, CSS e JavaScript puro, sem framework ou biblioteca de UI                 |
+| Servidor     | Node.js 24, com módulos nativos e API HTTP                                     |
+| Persistência | SQLite por meio de `node:sqlite`                                               |
+| Autenticação | E-mail e senha, hash com scrypt e sessões em cookies                           |
+| E-mails      | Integração com Resend e fila persistida no banco                               |
+| Qualidade    | Testes nativos do Node.js, Prettier e verificação parcial com TypeScript/JSDoc |
+| Distribuição | Build local, Docker e workflows de GitHub Actions                              |
+
+Não há dependências de terceiros no servidor em execução. TypeScript, tipos do Node.js e Prettier são ferramentas de desenvolvimento. A aplicação precisa de um servidor Node.js: hospedar somente os arquivos estáticos não oferece login, persistência ou lembretes.
+
+## Estrutura do projeto
+
+```text
+public/             Interface, estilos e favicon
+src/                Servidor, banco, e-mails, datas e contratos
+tests/              Testes de API e núcleo
+scripts/            Verificação, build e monitoramento
+deploy/             Docker Compose, proxy e publicação
+.github/workflows/  Integração contínua e monitoramento
+.env.example        Modelo de configuração sem credenciais
+```
+
+As pastas `data/`, `node_modules/` e `dist/` são locais ou geradas e não fazem parte do código versionado. O repositório não inclui contas, senhas reais, registros pessoais ou anexos dos usuários.
 
 ## Executar no computador
 
@@ -23,7 +52,7 @@ Abra http://localhost:3000, clique em **Criar conta** e use uma senha com pelo m
 
 O comando `npm start` funciona mesmo antes de instalar as dependências de desenvolvimento; `npm ci` instala TypeScript para os verificadores. Se a rede corporativa usar uma CA já confiada pelo sistema e o npm apresentar erro de certificado, execute com `NODE_OPTIONS=--use-system-ca`, sem desabilitar a validação TLS.
 
-## Recursos e uso
+## Funcionalidades
 
 | Área          | Operações                                                                                                                         |
 | ------------- | --------------------------------------------------------------------------------------------------------------------------------- |
@@ -35,6 +64,64 @@ O comando `npm start` funciona mesmo antes de instalar as dependências de desen
 | Leitura       | Cadastro com capa, autor e páginas; Quero ler/Lendo/Concluído; histórico editável e progresso calculado a partir dos registros    |
 | Saúde         | Treino, duração, água, quatro refeições; edição por dia e resumo dos sete dias até a data selecionada                             |
 | Configurações | Fuso IANA, horário de lembretes, meta de água, categorias, confirmação de e-mail e resultados de envio                            |
+
+### Conta e preferências
+
+- Cadastro e acesso com e-mail e senha; não existe usuário ou senha padrão.
+- Registros separados por conta, com validação de propriedade no servidor.
+- Alternância entre temas claro e escuro.
+- Configuração de fuso horário, horário padrão de lembretes e meta diária de água.
+- Categorias personalizadas com nome e cor para organizar compromissos.
+- Confirmação de e-mail e consulta do estado dos envios.
+
+### Visão geral
+
+A tela inicial reúne os compromissos do dia, tarefas e prazos, notas, livros em leitura e hidratação. As ações rápidas permitem iniciar um compromisso, nota, tarefa, livro ou registro diário sem percorrer cada seção.
+
+### Calendário e compromissos
+
+- Visualizações mensal, semanal e diária, com navegação entre períodos e retorno à data atual.
+- Criação, edição e exclusão de compromissos com título, data, horário opcional, categoria e observações.
+- Prazo adicional para um compromisso, quando necessário.
+- Exibição dos prazos das tarefas dos quadros no calendário.
+- Notas associadas a uma data, mesmo sem um compromisso naquele dia.
+- Lembretes por e-mail programados para 7 dias antes, 1 dia antes e na data, conforme as condições descritas adiante.
+
+### Notas
+
+- Notas com título, texto e etiquetas.
+- Pesquisa por título, conteúdo e etiquetas.
+- Fixação de notas para facilitar a consulta.
+- Associação opcional a um dia do calendário.
+- Salvamento automático após preencher o título, com indicação de alterações pendentes e aviso antes de descartar mudanças não salvas.
+
+### Quadros e tarefas
+
+- Quadros com listas para organizar etapas do trabalho.
+- Criação inicial das listas A fazer, Em andamento e Concluído.
+- Tarefas com descrição, etiquetas, cor, prazo, horário, capa, checklist e anexos.
+- Movimentação e reordenação por arrastar e soltar, com alternativas por controles de lista e posição.
+- Duplicação, conclusão, arquivamento e exclusão de tarefas.
+- Consulta de tarefas arquivadas e sincronização dos prazos com o calendário.
+- Capas em JPEG/PNG e anexos em JPEG/PNG/PDF, com limite de 5 MB por arquivo.
+
+### Leitura
+
+- Biblioteca com título, autor, capa, total de páginas e observações.
+- Filtros por status: Quero ler, Lendo e Concluído.
+- Registro de páginas lidas em uma data e registro explícito dos dias sem leitura.
+- Histórico editável e progresso calculado a partir das páginas registradas.
+- Acompanhamento da leitura do dia na interface.
+
+### Saúde e registros diários
+
+- Registro de treino, tipo de atividade, duração e observações.
+- Distinção entre treino realizado, não realizado e ainda não informado.
+- Registro de água em mililitros, meta configurável e ação para acrescentar 250 ml.
+- Anotações de café da manhã, almoço, jantar e lanches.
+- Edição por data e resumo dos sete dias até o dia selecionado.
+
+### Como os registros se relacionam
 
 Os cards são a própria fonte do calendário: não há um compromisso duplicado. Alterar o prazo do card altera o calendário. Marcar como concluído ou arquivar cancela os lembretes futuros. Um compromisso com data e prazo diferentes tem duas ocorrências relacionadas no calendário, ambas abrindo o mesmo editor.
 
@@ -128,4 +215,10 @@ Os backups de release cobrem o banco. Configure também backup periódico do vol
 - Logs JSON em stderr para erros de requisição, execução e e-mail; tentativas também ficam na tabela `mail_logs`.
 - Workflow `monitor.yml`: consulta o endpoint a cada 15 minutos quando `MONITOR_ENABLED=true`; configure `METRICS_URL` e `MONITOR_TOKEN` no environment separado `monitoring` (sem aprovação manual por execução). Ele falha quando encontra erro permanente, revisão necessária, e-mail sem configuração ou atraso maior que uma hora. Habilite as notificações de falha do GitHub para a equipe responsável. Agendamentos GitHub podem atrasar; use monitor dedicado para SLA estrito.
 
-Para a primeira ativação, confirme: servidor acessível em HTTPS, conta confirmada, três lembretes futuros na fila, recebimento de um lembrete real em homologação, atualização/cancelamento de prazos, backup e rollback exercitados. Nenhum desses serviços externos foi configurado silenciosamente.
+Para a primeira ativação, confirme: servidor acessível em HTTPS, conta confirmada, três lembretes futuros na fila, recebimento de um lembrete real em homologação, atualização/cancelamento de prazos, backup e rollback exercitados. Os arquivos de configuração não comprovam que esses serviços estejam ativos.
+
+## Desenvolvimento com IA
+
+A Remember me foi construída por meio de instruções em linguagem natural e geração de código com IA. Essa informação faz parte da apresentação do projeto para deixar transparente como a aplicação foi desenvolvida.
+
+**Este projeto foi inteiramente feito com o uso de Inteligência Artificial (IA), incluindo o código, a interface, os testes e esta documentação, a partir de instruções e decisões humanas.**
