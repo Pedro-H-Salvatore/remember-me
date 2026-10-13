@@ -1,0 +1,22 @@
+name: Monitoramento de e-mails
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '*/15 * * * *'
+permissions:
+  contents: read
+jobs:
+  monitor:
+    # Ative esta variável após configurar a publicação e os segredos.
+    if: vars.MONITOR_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    environment: monitoring
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: node scripts/monitor.mjs
+        env:
+          METRICS_URL: ${{ secrets.METRICS_URL }}
+          MONITOR_TOKEN: ${{ secrets.MONITOR_TOKEN }}

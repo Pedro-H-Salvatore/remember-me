@@ -1,0 +1,21 @@
+services:
+  app:
+    image: ${AURORA_IMAGE:?Set AURORA_IMAGE to an immutable image tag}
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      NODE_ENV: production
+      HOST: 0.0.0.0
+      PORT: 3000
+      DATA_DIR: /app/data
+    volumes:
+      - data:/app/data
+    ports:
+      - '127.0.0.1:${APP_PORT:-3000}:3000'
+    logging:
+      driver: json-file
+      options:
+        max-size: '10m'
+        max-file: '5'
+volumes:
+  data:
